@@ -69,7 +69,8 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    goods_id, introduction, specification_items, custom_attribute_items, item_images,package_list, sale_service
+    goods_id, introduction, specification_items, custom_attribute_items, item_images,
+    package_list, sale_service
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.pinyougou.pojo.TbGoodsDescExample" >
     select
@@ -102,7 +103,12 @@
     </if>
   </delete>
   <insert id="insert" parameterType="com.pinyougou.pojo.TbGoodsDesc" >
-    insert into tb_goods_desc (goods_id, introduction, specification_items, custom_attribute_items, item_images, package_list, sale_service) values (#{goodsId,jdbcType=BIGINT}, #{introduction,jdbcType=VARCHAR}, #{specificationItems,jdbcType=VARCHAR}, #{customAttributeItems,jdbcType=VARCHAR}, #{itemImages,jdbcType=VARCHAR}, #{packageList,jdbcType=VARCHAR}, #{saleService,jdbcType=VARCHAR})
+    insert into tb_goods_desc (goods_id, introduction, specification_items,
+      custom_attribute_items, item_images, package_list,
+      sale_service)
+    values (#{goodsId,jdbcType=BIGINT}, #{introduction,jdbcType=VARCHAR}, #{specificationItems,jdbcType=VARCHAR},
+      #{customAttributeItems,jdbcType=VARCHAR}, #{itemImages,jdbcType=VARCHAR}, #{packageList,jdbcType=VARCHAR},
+      #{saleService,jdbcType=VARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="com.pinyougou.pojo.TbGoodsDesc" >
     insert into tb_goods_desc

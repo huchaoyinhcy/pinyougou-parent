@@ -1,8 +1,11 @@
 package com.pinyougou.manager.controller;
 
+import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.pinyougou.page.service.ItemPageService;
+import com.pinyougou.pojo.TbItem;
+import com.pinyougou.search.service.ItemSearchService;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +28,12 @@ public class GoodsController {
 
     @Reference
     private GoodsService goodsService;
+
+    @Reference
+    private ItemSearchService itemSearchService;
+
+    @Reference(timeout = 50000)
+    private ItemPageService itemPageService;
 
     /**
      * 返回全部列表
@@ -103,6 +112,7 @@ public class GoodsController {
     public Result delete(Long[] ids) {
         try {
             goodsService.delete(ids);
+            itemSearchService.deleteByGoodsIds(Arrays.asList(ids));
             return new Result(true, "删除成功");
         } catch (Exception e) {
             e.printStackTrace();
@@ -134,10 +144,35 @@ public class GoodsController {
     public Result updateStatus(Long[] ids, String status) {
         try {
             goodsService.updateStatus(ids, status);
+            //按照spu id 查询sku    列表(状态为1)
+            if (status.equals("1")) {
+                List<TbItem> itemList = goodsService.findItemListByGoodsIdandStatus(ids, status);
+                //调用搜索接口实现数据批量导入
+                if (itemList.size() > 0) {
+                    itemSearchService.importList(itemList);
+                } else {
+                    System.out.println("无明细数据");
+                }
+                //静态页面生成
+                for (Long goodsId : ids) {
+                    itemPageService.genItemHtml(goodsId);
+                }
+            }
             return new Result(true, "成功");
         } catch (Exception e) {
             e.printStackTrace();
             return new Result(false, "失败");
         }
     }
+
+    /**
+     * 生成静态页（测试）
+     *
+     * @param goodsId
+     */
+//
+//    @RequestMapping("/genHtml")
+//    public void genHtml(Long goodsId) {
+//        itemPageService.genItemHtml(goodsId);
+//    }
 }

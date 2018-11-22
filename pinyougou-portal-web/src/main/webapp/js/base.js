@@ -1,1 +1,2 @@
-var app=angular.module('pinyougou',[]);
+var app = angular.module('pinyougou', []);
+

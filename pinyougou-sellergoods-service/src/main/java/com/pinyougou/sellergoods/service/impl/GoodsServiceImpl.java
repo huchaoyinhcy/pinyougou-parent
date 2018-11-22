@@ -1,11 +1,12 @@
 package com.pinyougou.sellergoods.service.impl;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+
 import com.pinyougou.mapper.*;
 import com.pinyougou.pojo.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,6 +177,15 @@ public class GoodsServiceImpl implements GoodsService {
             goods.setAuditStatus(status);
             goodsMapper.updateByPrimaryKey(goods);
         }
+    }
+
+    @Override
+    public List<TbItem> findItemListByGoodsIdandStatus(Long[] goodIds, String status) {
+        TbItemExample example=new TbItemExample();
+        TbItemExample.Criteria criteria = example.createCriteria();
+        criteria.andGoodsIdIn(Arrays.asList(goodIds));
+        criteria.andStatusEqualTo(status);
+        return itemMapper.selectByExample(example);
     }
 
     private void setItemValus(Goods goods, TbItem item) {
