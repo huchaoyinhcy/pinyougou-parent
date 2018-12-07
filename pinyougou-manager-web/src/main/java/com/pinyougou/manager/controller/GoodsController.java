@@ -1,11 +1,13 @@
 package com.pinyougou.manager.controller;
 
-import java.util.Arrays;
+
 import java.util.List;
 
-import com.pinyougou.page.service.ItemPageService;
+import com.alibaba.fastjson.JSON;
 import com.pinyougou.pojo.TbItem;
-import com.pinyougou.search.service.ItemSearchService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +18,11 @@ import com.pinyougou.sellergoods.service.GoodsService;
 import entity.PageResult;
 import entity.Result;
 import pojogroup.Goods;
+
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
 
 /**
  * controller
@@ -29,11 +36,26 @@ public class GoodsController {
     @Reference
     private GoodsService goodsService;
 
-    @Reference
-    private ItemSearchService itemSearchService;
+//    @Reference
+//    private ItemSearchService itemSearchService;
 
-    @Reference(timeout = 50000)
-    private ItemPageService itemPageService;
+//    @Reference(timeout = 50000)
+//    private ItemPageService itemPageService;
+
+    @Autowired
+    private Destination queueSolrDestination;//用于发送solr 的导入信息
+
+    @Autowired
+    private Destination queueSolrDeleteDestination;//用于删除索引库的记录
+
+    @Autowired
+    private Destination topicPageDestination;//生成商品详情页静态化页面
+
+    @Autowired
+    private JmsTemplate jmsTemplate;
+
+    @Autowired
+    private Destination topicPageDeleteDestination;//删除商品详情页
 
     /**
      * 返回全部列表
@@ -109,10 +131,24 @@ public class GoodsController {
      * @return
      */
     @RequestMapping("/delete")
-    public Result delete(Long[] ids) {
+    public Result delete(final Long[] ids) {
         try {
             goodsService.delete(ids);
-            itemSearchService.deleteByGoodsIds(Arrays.asList(ids));
+//            itemSearchService.deleteByGoodsIds(Arrays.asList(ids));
+            jmsTemplate.send(queueSolrDeleteDestination, new MessageCreator() {
+                @Override
+                public Message createMessage(Session session) throws JMSException {
+                    return session.createObjectMessage(ids);
+                }
+            });
+
+            //删除页面
+            jmsTemplate.send(topicPageDeleteDestination, new MessageCreator() {
+                @Override
+                public Message createMessage(Session session) throws JMSException {
+                    return session.createObjectMessage(ids);
+                }
+            });
             return new Result(true, "删除成功");
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,13 +185,27 @@ public class GoodsController {
                 List<TbItem> itemList = goodsService.findItemListByGoodsIdandStatus(ids, status);
                 //调用搜索接口实现数据批量导入
                 if (itemList.size() > 0) {
-                    itemSearchService.importList(itemList);
+//                    itemSearchService.importList(itemList);
+                    final String jsonString = JSON.toJSONString(itemList);
+                    jmsTemplate.send(queueSolrDestination, new MessageCreator() {
+                        @Override
+                        public Message createMessage(Session session) throws JMSException {
+                            return session.createTextMessage(jsonString);
+                        }
+                    });
+
                 } else {
                     System.out.println("无明细数据");
                 }
                 //静态页面生成
-                for (Long goodsId : ids) {
-                    itemPageService.genItemHtml(goodsId);
+                for (final Long goodsId : ids) {
+//                    itemPageService.genItemHtml(goodsId);
+                        jmsTemplate.send(topicPageDestination, new MessageCreator() {
+                        @Override
+                        public Message createMessage(Session session) throws JMSException {
+                            return session.createTextMessage(goodsId + "");
+                        }
+                    });
                 }
             }
             return new Result(true, "成功");

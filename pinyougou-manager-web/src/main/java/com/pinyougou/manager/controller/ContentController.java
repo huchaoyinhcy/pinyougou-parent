@@ -3,7 +3,6 @@ package com.pinyougou.manager.controller;
 import java.util.List;
 
 import com.pinyougou.content.service.ContentService;
-import com.pinyougou.search.service.ItemSearchService;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
